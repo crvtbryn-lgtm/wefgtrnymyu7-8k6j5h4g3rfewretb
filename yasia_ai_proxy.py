@@ -1,4 +1,8 @@
-pip install flask requests flask-cors
+"""
+Yasya AI Proxy — прокси-сервер для безопасной работы с DeepSeek API.
+Принимает запрос с хаба, добавляет ключ и отправляет в api.deepseek.com.
+Запуск:
+    pip install flask requests flask-cors
     export DEEPSEEK_API_KEY="sk-f894ba5d0c8342db87144a713113a084"
     python yasia_ai_proxy.py
 
@@ -10,12 +14,11 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # чтобы хаб мог обращаться с любого источника
+CORS(app)
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
 if not DEEPSEEK_API_KEY:
     print("⚠️  Установите переменную окружения DEEPSEEK_API_KEY")
-    # Не падаем с ошибкой, даём осознать при первом же запросе
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 
@@ -32,7 +35,6 @@ def yasia():
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
 
-    # Извлекаем параметры, которые передаёт хаб
     model = data.get("model", "deepseek-chat")
     messages = data.get("messages", [])
     temperature = data.get("temperature", 0.7)
@@ -51,17 +53,14 @@ def yasia():
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        # можно добавить stream: False, если не нужна потоковая передача
     }
 
     try:
         resp = requests.post(DEEPSEEK_URL, headers=headers, json=payload, timeout=30)
-        resp.raise_for_status()  # выбросит ошибку при 4xx/5xx
+        resp.raise_for_status()
         result = resp.json()
-        # Возвращаем содержимое ответа DeepSeek в удобном виде
         return jsonify(result), 200
     except requests.exceptions.RequestException as e:
-        # Пробрасываем ошибку от DeepSeek
         error_msg = str(e)
         if hasattr(e, "response") and e.response is not None:
             error_msg = e.response.text
